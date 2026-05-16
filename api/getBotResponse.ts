@@ -1,5 +1,4 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { SYSTEM_PROMPT, BOOTSTRAP_INSTRUCTION } from './_lib/systemPrompt';
 import { checkRateLimit } from './_lib/rateLimit';
@@ -7,24 +6,14 @@ import { rememberPersona, recallPersona } from './_lib/personaCache';
 
 dotenv.config();
 
+// OpenAI-compatible Claude Max relay (e.g. localhost:3456 on the deepblue box).
+// Set OPENAI_BASE_URL to the proxy root that exposes /v1/chat/completions.
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL ?? 'http://localhost:3456';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? '';
 const MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
+
 const MAX_INPUT_CHARS = 500;
 const MIN_DATE = '1500-01-01';
-
-// `baseURL` lets us route through a proxy (e.g. a Claude Max relay) without
-// code changes. Auth scheme remains `x-api-key` — the proxy needs to accept
-// that header, or rewrite it server-side.
-//
-// timeout: cap upstream wait so a stuck proxy surfaces as an error instead of
-// holding the connection until the platform's edge timeout kicks in.
-const UPSTREAM_TIMEOUT_MS = 25_000;
-const client = new Anthropic({
-  ...(process.env.ANTHROPIC_BASE_URL
-    ? { baseURL: process.env.ANTHROPIC_BASE_URL }
-    : {}),
-  timeout: UPSTREAM_TIMEOUT_MS,
-  maxRetries: 1,
-});
 
 type Msg = { role: 'user' | 'assistant'; text: string };
 type Body = {
@@ -33,6 +22,8 @@ type Body = {
   bootstrap?: boolean;
   messages?: Msg[];
 };
+
+type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -72,16 +63,45 @@ function buildPersonaContext(date: string, sessionId: string, persona: string | 
   return `[TIME_DIAL: ${date}]\n[SESSION: ${sessionId}]\n[PERSONA: ${persona}]\n\n(Stay in this persona for the entire conversation. Respond in plain text as this person would. Do not output JSON.)`;
 }
 
-function extractText(resp: Anthropic.Message): string {
-  return resp.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('');
+class UpstreamError extends Error {
+  status: number;
+  body: string;
+  constructor(status: number, body: string) {
+    super(`upstream ${status}`);
+    this.status = status;
+    this.body = body;
+  }
+}
+
+async function chatCompletion(messages: ChatMessage[], maxTokens: number): Promise<string> {
+  const url = `${OPENAI_BASE_URL.replace(/\/$/, '')}/v1/chat/completions`;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (OPENAI_API_KEY) headers['Authorization'] = `Bearer ${OPENAI_API_KEY}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, messages }),
+  });
+
+  const text = await res.text();
+  if (!res.ok) throw new UpstreamError(res.status, text);
+
+  let parsed: { choices?: Array<{ message?: { content?: string } }> };
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new UpstreamError(res.status, `non-json response: ${text.slice(0, 200)}`);
+  }
+  const content = parsed.choices?.[0]?.message?.content;
+  if (typeof content !== 'string') {
+    throw new UpstreamError(502, `missing content in upstream response: ${text.slice(0, 200)}`);
+  }
+  return content;
 }
 
 function parseBootstrapReply(raw: string): { persona: string; opening: string } | null {
   const trimmed = raw.trim();
-  // Strip ```json fences if the model added them despite instructions
   const stripped = trimmed.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '');
   try {
     const parsed = JSON.parse(stripped);
@@ -97,7 +117,6 @@ function parseBootstrapReply(raw: string): { persona: string; opening: string } 
   } catch {
     // fall through
   }
-  // Last-ditch: find the first {...} block
   const m = stripped.match(/\{[\s\S]*\}/);
   if (m) {
     try {
@@ -145,14 +164,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   try {
     if (isBootstrap) {
       const userText = buildPersonaContext(body.date, body.sessionId, null);
-      const resp = await client.messages.create({
-        model: MODEL,
-        max_tokens: 400,
-        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: userText }],
-      });
-
-      const raw = extractText(resp);
+      const raw = await chatCompletion(
+        [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userText },
+        ],
+        400,
+      );
       const parsed = parseBootstrapReply(raw);
       if (!parsed) {
         return send(res, 502, { error: 'bootstrap_parse_failed', raw });
@@ -175,17 +193,16 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
     let persona = recallPersona(body.sessionId);
 
-    // If we lost the persona (cold start, eviction), silently re-bootstrap once
-    // using the session id as a seed and then continue.
     if (!persona) {
       const seedText = buildPersonaContext(body.date, body.sessionId, null);
-      const seedResp = await client.messages.create({
-        model: MODEL,
-        max_tokens: 400,
-        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: seedText }],
-      });
-      const parsed = parseBootstrapReply(extractText(seedResp));
+      const seedRaw = await chatCompletion(
+        [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: seedText },
+        ],
+        400,
+      );
+      const parsed = parseBootstrapReply(seedRaw);
       if (!parsed) {
         return send(res, 502, { error: 'persona_seed_failed' });
       }
@@ -194,54 +211,25 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
 
     const prefix = buildPersonaContext(body.date, body.sessionId, persona);
-    const apiMessages: Anthropic.MessageParam[] = body.messages.map((m, i) => ({
-      role: m.role,
-      content: i === 0 && m.role === 'user' ? `${prefix}\n\n${m.text}` : m.text,
-    }));
+    const chatMessages: ChatMessage[] = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...body.messages.map((m, i) => ({
+        role: m.role,
+        content: i === 0 && m.role === 'user' ? `${prefix}\n\n${m.text}` : m.text,
+      })),
+    ];
 
-    const resp = await client.messages.create({
-      model: MODEL,
-      max_tokens: 350,
-      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-      messages: apiMessages,
-    });
-
-    const reply = extractText(resp).trim();
+    const reply = (await chatCompletion(chatMessages, 350)).trim();
     if (!reply) {
       return send(res, 502, { error: 'empty_reply' });
     }
     return send(res, 200, { reply, persona });
   } catch (err) {
+    if (err instanceof UpstreamError) {
+      if (err.status === 429) return send(res, 503, { error: 'upstream_rate_limited' });
+      return send(res, 502, { error: 'upstream_error', status: err.status, message: err.body.slice(0, 300) });
+    }
     const message = err instanceof Error ? err.message : 'unknown';
-    const baseUrl = process.env.ANTHROPIC_BASE_URL ?? 'api.anthropic.com (default)';
-    const hasKey = Boolean(process.env.ANTHROPIC_API_KEY);
-
-    // Surface enough detail in the platform's logs to diagnose proxy / auth
-    // issues without ever echoing the key itself.
-    console.error('[dial] upstream call failed', {
-      message,
-      name: err instanceof Error ? err.name : typeof err,
-      baseUrl,
-      model: MODEL,
-      hasKey,
-      bootstrap: isBootstrap,
-    });
-
-    if (err instanceof Anthropic.APIConnectionTimeoutError) {
-      return send(res, 504, { error: 'upstream_timeout', baseUrl });
-    }
-    if (err instanceof Anthropic.APIConnectionError) {
-      return send(res, 502, { error: 'upstream_unreachable', baseUrl, message });
-    }
-    if (err instanceof Anthropic.AuthenticationError) {
-      return send(res, 502, { error: 'upstream_auth_failed', message });
-    }
-    if (err instanceof Anthropic.RateLimitError) {
-      return send(res, 503, { error: 'upstream_rate_limited' });
-    }
-    if (err instanceof Anthropic.APIError) {
-      return send(res, 502, { error: 'upstream_error', status: err.status, message });
-    }
     return send(res, 500, { error: 'internal_error', message });
   }
 }

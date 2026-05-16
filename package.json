@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "tsx api/server.ts",
+    "dev:local": "node -e \"const{spawn}=require('child_process');const procs=[spawn('npm',['run','dev:api'],{stdio:'inherit'}),spawn('npm',['run','dev'],{stdio:'inherit'})];const kill=()=>procs.forEach(p=>p.kill('SIGTERM'));process.on('SIGINT',kill);process.on('SIGTERM',kill);procs.forEach(p=>p.on('exit',c=>{kill();process.exit(c??0);}));\"",
     "dev:vercel": "vercel dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -15,7 +17,8 @@
     "dotenv": "^16.4.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "styled-components": "^6.1.13"
+    "styled-components": "^6.1.13",
+    "tsx": "^4.22.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.11.1",
