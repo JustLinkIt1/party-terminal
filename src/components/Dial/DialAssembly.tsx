@@ -175,6 +175,13 @@ const Pill = styled.button`
     transform 60ms ease-out,
     box-shadow 60ms ease-out;
 
+  @media (max-width: ${theme.breakpoints.md}) {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
   &:hover:not(:disabled) {
     box-shadow: ${theme.shadow.buttonResting}, ${theme.glow.brassWarm};
   }

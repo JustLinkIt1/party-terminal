@@ -68,7 +68,7 @@ export function useChat(initialDate: string) {
     }));
 
     const ac = new AbortController();
-    const timeoutId = setTimeout(() => ac.abort(), 30_000);
+    const timeoutId = setTimeout(() => ac.abort(), 60_000);
 
     try {
       const res = await fetch('/api/getBotResponse', {
@@ -136,7 +136,7 @@ export function useChat(initialDate: string) {
     const gen = generationRef.current;
 
     const ac = new AbortController();
-    const timeoutId = setTimeout(() => ac.abort(), 30_000);
+    const timeoutId = setTimeout(() => ac.abort(), 60_000);
 
     try {
       const res = await fetch('/api/getBotResponse', {

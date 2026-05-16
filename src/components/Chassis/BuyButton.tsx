@@ -51,7 +51,9 @@ const Cap = styled.a<{ $disabled: boolean }>`
 
   @media (max-width: ${theme.breakpoints.md}) {
     font-size: 14px;
-    padding: ${theme.space.tight} ${theme.space.base};
+    padding: 13px ${theme.space.base};
+    min-height: 44px;
+    justify-content: center;
   }
 `;
 

@@ -15,6 +15,12 @@ const Row = styled.div`
     scroll-snap-type: x mandatory;
     padding-bottom: ${theme.space.tight};
 
+    /* Constrain to the viewport so the scrollable strip doesn't push the
+       whole page wider than 100vw on mobile. */
+    width: 100%;
+    align-self: stretch;
+    max-width: 100vw;
+
     /* Edge fade mask */
     mask-image: linear-gradient(
       to right,
@@ -80,8 +86,8 @@ const Cap = styled.button<{ $active: boolean }>`
     `}
 
   @media (max-width: ${theme.breakpoints.md}) {
-    width: 96px;
-    height: 48px;
+    width: 100px;
+    height: 52px;
     font-size: 12px;
   }
 `;

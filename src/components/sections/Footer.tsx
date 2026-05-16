@@ -42,6 +42,18 @@ const Link = styled.a`
   font-size: 13px;
   color: ${theme.color.chassis.brassBright};
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  padding: 12px 14px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(212, 175, 55, 0);
+  transition: border-color 160ms ease, color 160ms ease;
+
+  &:hover {
+    border-bottom-color: rgba(212, 175, 55, 0.55);
+    color: ${theme.color.chassis.brassBright};
+  }
 `;
 
 const CaRow = styled.div`
