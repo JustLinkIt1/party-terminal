@@ -1,113 +1,87 @@
-// src/App.tsx
-import React, { useState, KeyboardEvent, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
-import './index.css'; // Ensure this is imported to apply global styles
+import { GlobalStyle } from './styles/GlobalStyle';
+import { theme } from './theme';
+import { config } from './config';
+import { TopBar } from './components/TopBar';
+import { Terminal } from './components/Terminal/Terminal';
+import { useChat } from './components/Terminal/useChat';
+import { ScanlineOverlay } from './components/ScanlineOverlay';
+import { Toast } from './components/Toast';
+import { Lore } from './components/sections/Lore';
+import { SampleDispatches } from './components/sections/SampleDispatches';
+import { Tokenomics } from './components/sections/Tokenomics';
+import { HowToBuy } from './components/sections/HowToBuy';
+import { Roadmap } from './components/sections/Roadmap';
+import { Footer } from './components/sections/Footer';
 
-const TerminalContainer = styled.div`
-  background-color: #000;
-  color: #00ff00;
-  font-family: 'VT323', monospace;
-  height: 100vh;
-  padding: 20px;
-  overflow-y: auto;
-  text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
+const Hero = styled.div`
+  padding: ${theme.space(8)} ${theme.space(4)} ${theme.space(4)};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: ${theme.space(4)};
+
+  @media (max-width: ${theme.breakpoints.md}) {
+    padding: ${theme.space(6)} ${theme.space(2)} ${theme.space(2)};
+  }
 `;
 
-const Message = styled.p`
+const Tagline = styled.h1`
   margin: 0;
+  font-size: clamp(28px, 5vw, 48px);
+  color: ${theme.colors.phosphor};
+  text-shadow: ${theme.glow.strong};
+  letter-spacing: 0.05em;
+  font-weight: normal;
+  max-width: 24ch;
+  line-height: 1.2;
+  text-transform: uppercase;
+`;
+
+const Sub = styled.p`
+  margin: 0;
+  color: ${theme.colors.phosphorDim};
+  font-size: 18px;
+  max-width: 50ch;
   line-height: 1.5;
 `;
 
-const Input = styled.input`
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: #00ff00;
-  font-size: 18px;
-  outline: none;
-  font-family: inherit;
-  text-shadow: inherit;
-`;
-
 function App() {
-  const [messages, setMessages] = useState<{ sender: string; text: string }[]>([]);
-  const [input, setInput] = useState('');
-  const [isBotTyping, setIsBotTyping] = useState(false);
-  const terminalEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSend = async (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && input.trim() !== '') {
-      const userMessage = input.trim();
-      setMessages([...messages, { sender: 'You', text: userMessage }]);
-      setInput('');
-
-      setIsBotTyping(true); // Show typing indicator
-
-      const botResponse = await getBotResponse(userMessage);
-
-      setIsBotTyping(false); // Hide typing indicator
-
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { sender: 'Bot', text: botResponse },
-      ]);
-    }
-  };
-
-  const getBotResponse = async (message: string): Promise<string> => {
-    try {
-      const response = await fetch('/api/getBotResponse', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error fetching bot response:', errorData.message);
-        return "Hmm, I'm having trouble partying right now.";
-      }
-
-      const data = await response.json();
-      return data.reply || "Hmm, I'm having trouble partying right now.";
-    } catch (error) {
-      console.error('Error fetching bot response:', error);
-      return "Sorry, I'm having trouble connecting to the party.";
-    }
-  };
+  const chat = useChat(config.DEFAULT_DATE);
+  const [toast, setToast] = useState<string | null>(null);
 
   return (
-    <TerminalContainer>
-      {messages.map((msg, index) => (
-        <Message key={index}>
-          <strong>{msg.sender}:</strong> {msg.text}
-        </Message>
-      ))}
-      {isBotTyping && (
-        <Message>
-          <em>Bot is typing...</em>
-        </Message>
-      )}
-      <Input
-        type="text"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={handleSend}
-        placeholder="Type your message and press Enter..."
-        autoFocus
+    <>
+      <GlobalStyle />
+      <ScanlineOverlay />
+      <TopBar onCopy={setToast} />
+      <Hero>
+        <Tagline>{config.TAGLINE}</Tagline>
+        <Sub>
+          A terminal that calls people in the past. Turn the dial. Pick a day.
+          See who picks up.
+        </Sub>
+      </Hero>
+      <Terminal
+        date={chat.state.date}
+        persona={chat.state.persona}
+        messages={chat.state.messages}
+        status={chat.state.status}
+        error={chat.state.error}
+        onDateChange={chat.setDate}
+        onReroll={chat.reroll}
+        onSend={chat.send}
       />
-      <div ref={terminalEndRef} />
-    </TerminalContainer>
+      <Lore />
+      <SampleDispatches onPickDate={chat.setDate} />
+      <Tokenomics />
+      <HowToBuy />
+      <Roadmap />
+      <Footer onCopy={setToast} />
+      <Toast message={toast} onClear={() => setToast(null)} />
+    </>
   );
 }
 
