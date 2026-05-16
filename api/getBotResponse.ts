@@ -14,11 +14,17 @@ const MIN_DATE = '1500-01-01';
 // `baseURL` lets us route through a proxy (e.g. a Claude Max relay) without
 // code changes. Auth scheme remains `x-api-key` — the proxy needs to accept
 // that header, or rewrite it server-side.
-const client = new Anthropic(
-  process.env.ANTHROPIC_BASE_URL
+//
+// timeout: cap upstream wait so a stuck proxy surfaces as an error instead of
+// holding the connection until the platform's edge timeout kicks in.
+const UPSTREAM_TIMEOUT_MS = 25_000;
+const client = new Anthropic({
+  ...(process.env.ANTHROPIC_BASE_URL
     ? { baseURL: process.env.ANTHROPIC_BASE_URL }
-    : {}
-);
+    : {}),
+  timeout: UPSTREAM_TIMEOUT_MS,
+  maxRetries: 1,
+});
 
 type Msg = { role: 'user' | 'assistant'; text: string };
 type Body = {
@@ -207,6 +213,29 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return send(res, 200, { reply, persona });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown';
+    const baseUrl = process.env.ANTHROPIC_BASE_URL ?? 'api.anthropic.com (default)';
+    const hasKey = Boolean(process.env.ANTHROPIC_API_KEY);
+
+    // Surface enough detail in the platform's logs to diagnose proxy / auth
+    // issues without ever echoing the key itself.
+    console.error('[dial] upstream call failed', {
+      message,
+      name: err instanceof Error ? err.name : typeof err,
+      baseUrl,
+      model: MODEL,
+      hasKey,
+      bootstrap: isBootstrap,
+    });
+
+    if (err instanceof Anthropic.APIConnectionTimeoutError) {
+      return send(res, 504, { error: 'upstream_timeout', baseUrl });
+    }
+    if (err instanceof Anthropic.APIConnectionError) {
+      return send(res, 502, { error: 'upstream_unreachable', baseUrl, message });
+    }
+    if (err instanceof Anthropic.AuthenticationError) {
+      return send(res, 502, { error: 'upstream_auth_failed', message });
+    }
     if (err instanceof Anthropic.RateLimitError) {
       return send(res, 503, { error: 'upstream_rate_limited' });
     }

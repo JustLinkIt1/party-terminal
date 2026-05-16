@@ -11,6 +11,27 @@ type ChatState = {
   error: string | null;
 };
 
+function humanizeError(data: { error?: string }, status: number): string {
+  switch (data.error) {
+    case 'rate_limited':
+      return 'too many requests — wait a minute';
+    case 'message_too_long':
+      return 'message too long';
+    case 'upstream_timeout':
+      return 'the line is silent — proxy not responding';
+    case 'upstream_unreachable':
+      return "can't reach the proxy — check ANTHROPIC_BASE_URL";
+    case 'upstream_auth_failed':
+      return 'auth rejected by proxy — check ANTHROPIC_API_KEY';
+    case 'upstream_rate_limited':
+      return 'upstream is throttling — wait a minute';
+    case 'invalid_date':
+      return 'date out of range';
+    default:
+      return status >= 500 ? `signal lost (${status})` : 'request rejected';
+  }
+}
+
 const newSessionId = () =>
   (typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
@@ -46,22 +67,23 @@ export function useChat(initialDate: string) {
       error: null,
     }));
 
+    const ac = new AbortController();
+    const timeoutId = setTimeout(() => ac.abort(), 30_000);
+
     try {
       const res = await fetch('/api/getBotResponse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date, sessionId, bootstrap: true }),
+        signal: ac.signal,
       });
+      clearTimeout(timeoutId);
 
       if (gen !== generationRef.current) return; // stale
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setState((s) => ({
-          ...s,
-          status: 'error',
-          error: data.error === 'rate_limited' ? 'too many requests — wait a minute' : 'signal lost',
-        }));
+        setState((s) => ({ ...s, status: 'error', error: humanizeError(data, res.status) }));
         return;
       }
       const data: { persona: string; opening: string } = await res.json();
@@ -71,9 +93,15 @@ export function useChat(initialDate: string) {
         messages: [{ role: 'assistant', text: data.opening }],
         status: 'idle',
       }));
-    } catch {
+    } catch (err) {
+      clearTimeout(timeoutId);
       if (gen !== generationRef.current) return;
-      setState((s) => ({ ...s, status: 'error', error: 'signal lost' }));
+      const aborted = err instanceof DOMException && err.name === 'AbortError';
+      setState((s) => ({
+        ...s,
+        status: 'error',
+        error: aborted ? 'no answer — line went dead' : 'signal lost',
+      }));
     }
   }, []);
 
@@ -107,6 +135,9 @@ export function useChat(initialDate: string) {
 
     const gen = generationRef.current;
 
+    const ac = new AbortController();
+    const timeoutId = setTimeout(() => ac.abort(), 30_000);
+
     try {
       const res = await fetch('/api/getBotResponse', {
         method: 'POST',
@@ -116,22 +147,15 @@ export function useChat(initialDate: string) {
           sessionId: stateRef.current.sessionId,
           messages: messagesAfterUser,
         }),
+        signal: ac.signal,
       });
+      clearTimeout(timeoutId);
 
       if (gen !== generationRef.current) return; // dial changed mid-flight
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setState((s) => ({
-          ...s,
-          status: 'error',
-          error:
-            data.error === 'rate_limited'
-              ? 'too many requests — wait a minute'
-              : data.error === 'message_too_long'
-                ? 'message too long'
-                : 'signal lost',
-        }));
+        setState((s) => ({ ...s, status: 'error', error: humanizeError(data, res.status) }));
         return;
       }
       const data: { reply: string; persona?: string } = await res.json();
@@ -141,9 +165,15 @@ export function useChat(initialDate: string) {
         persona: data.persona ?? s.persona,
         status: 'idle',
       }));
-    } catch {
+    } catch (err) {
+      clearTimeout(timeoutId);
       if (gen !== generationRef.current) return;
-      setState((s) => ({ ...s, status: 'error', error: 'signal lost' }));
+      const aborted = err instanceof DOMException && err.name === 'AbortError';
+      setState((s) => ({
+        ...s,
+        status: 'error',
+        error: aborted ? 'no answer — line went dead' : 'signal lost',
+      }));
     }
   }, []);
 
