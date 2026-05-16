@@ -44,7 +44,7 @@ export function Terminal({ persona, messages, status, error, onSend }: Props) {
         <BootSequence onDone={() => setBooted(true)} />
       ) : (
         <Body>
-          <PersonaChip persona={persona} />
+          <PersonaChip key={persona ?? 'no-signal'} persona={persona} />
           <MessageLog messages={messages} status={status} error={error} />
           <PromptInput
             disabled={inputDisabled}

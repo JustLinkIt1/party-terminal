@@ -25,6 +25,55 @@ const Hero = styled.div`
   text-align: center;
 `;
 
+// A thin engraved brass rule with a small diamond ornament centered on it.
+// Used above and below the tagline as a Victorian title-card device.
+const Filigree = styled.div`
+  position: relative;
+  width: min(280px, 70vw);
+  margin: 0 auto ${theme.space.base};
+  height: 14px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(212, 175, 55, 0.55) 18%,
+      rgba(212, 175, 55, 0.55) 82%,
+      transparent 100%
+    );
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    background: linear-gradient(
+      135deg,
+      ${theme.color.chassis.brassBright} 0%,
+      ${theme.color.chassis.brassBase} 60%,
+      ${theme.color.chassis.brassDark} 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 220, 140, 0.5),
+      0 1px 2px rgba(0, 0, 0, 0.55);
+  }
+`;
+
+const FiligreeBelow = styled(Filigree)`
+  margin: ${theme.space.base} auto 0;
+`;
+
 const Tagline = styled.h2`
   font-family: ${theme.font.display};
   font-weight: 400;
@@ -145,7 +194,9 @@ function App() {
       <ChassisFrame>
         <NameplatePanel onCopy={setToast} />
         <Hero>
+          <Filigree aria-hidden />
           <Tagline>{config.TAGLINE}</Tagline>
+          <FiligreeBelow aria-hidden />
           <HeroLead>
             A Victorian chronograph wired to a phosphor CRT. Turn the dial. Pick
             a day. See who picks up.

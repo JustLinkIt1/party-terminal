@@ -55,6 +55,14 @@ export const leverThrow = keyframes`
   100% { transform: rotate(0deg); }
 `;
 
+// Persona-plate reveal: brief CRT bloom then settle.
+export const plateLatch = keyframes`
+  0%   { transform: scaleY(0.02); opacity: 0.2; filter: brightness(2.6); letter-spacing: 0.4em; }
+  35%  { transform: scaleY(1.04); opacity: 1;   filter: brightness(1.8); letter-spacing: 0.15em; }
+  72%  { transform: scaleY(0.98); opacity: 1;   filter: brightness(1.1); }
+  100% { transform: scaleY(1);    opacity: 1;   filter: brightness(1);   letter-spacing: 0.06em; }
+`;
+
 // Phosphor scanline overlay — a reusable styled-components mixin.
 export const scanlineLayer = css`
   position: absolute;
