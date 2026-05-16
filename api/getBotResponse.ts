@@ -168,7 +168,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       if (!m || (m.role !== 'user' && m.role !== 'assistant') || typeof m.text !== 'string') {
         return send(res, 400, { error: 'invalid_message_shape' });
       }
-      if (m.text.length > MAX_INPUT_CHARS) {
+      if (m.role === 'user' && m.text.length > MAX_INPUT_CHARS) {
         return send(res, 400, { error: 'message_too_long', maxChars: MAX_INPUT_CHARS });
       }
     }
