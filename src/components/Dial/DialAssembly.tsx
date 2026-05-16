@@ -1,96 +1,42 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../theme';
 import { config } from '../../config';
 import { isValidDialDate, randomDate } from '../../lib/dates';
 
-// The DialAssembly is the central tactile control. Three concentric brass
-// rings — year / month / day — engraved with their values. A center hub
-// renders the selected date as phosphor on a small CRT readout. A pointer
-// rivet at 12 o'clock anchors the "selection" position visually.
+// The DialAssembly is the central tactile control. The three-ring engraved
+// brass disc is rendered from /assets/dial-disc.png; on top of it we render a
+// phosphor center readout showing the *pending* date and a brass pointer rivet
+// at 12 o'clock.
 //
-// V1 interaction: +/- pills below the dial commit changes. Drag-to-rotate
-// is on the roadmap (v2) — the rings carry inertia in spec, but the visual
-// is the focus of this pass.
+// Critically, the dial maintains a *pendingDate* internally and only emits
+// onDateChange when the user explicitly presses TUNE IN. +/-1 year scrolling,
+// typing into the date field, and picking a decade all mutate pendingDate
+// only — they never load the bot automatically. Random and the preset chips
+// (parent component) remain one-shot: they commit immediately.
 
 const MIN_YEAR = parseInt(config.MIN_DATE.slice(0, 4), 10);
 const TODAY = new Date();
 const MAX_YEAR = TODAY.getFullYear();
+const TODAY_ISO = TODAY.toISOString().slice(0, 10);
 
-const Frame = styled.div`
+const Outer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${theme.space.base};
+`;
+
+const DiscWrap = styled.div`
   position: relative;
   width: min(420px, 88vw);
   aspect-ratio: 1 / 1;
-  margin: 0 auto;
-  flex-shrink: 0;
+  background: url('/assets/dial-disc.png') no-repeat center / contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
 
   @media (max-width: ${theme.breakpoints.md}) {
     width: min(320px, 90vw);
   }
-`;
-
-const Ring = styled.div<{ $size: number; $depth: number }>`
-  position: absolute;
-  inset: ${(p) => p.$depth}%;
-  border-radius: ${theme.radius.knob};
-  background:
-    radial-gradient(circle at 30% 25%, #E8C66A 0%, transparent 35%),
-    radial-gradient(circle at 50% 50%, #B08D57 0%, #8A6A2E 60%, #5C4519 100%);
-  box-shadow:
-    inset 0 4px 8px rgba(0, 0, 0, 0.55),
-    inset 0 -3px 4px rgba(212, 175, 55, 0.25),
-    0 2px 4px rgba(0, 0, 0, 0.4);
-`;
-
-// Engraved text rendered radially via SVG textPath on a hidden arc.
-const Glyphs = styled.svg`
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-`;
-
-const Hub = styled.div`
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 30%;
-  height: 30%;
-  transform: translate(-50%, -50%);
-  border-radius: ${theme.radius.knob};
-  background:
-    radial-gradient(circle, ${theme.color.crt.screen} 0%, #02080A 100%);
-  box-shadow:
-    inset 0 4px 10px rgba(0, 0, 0, 0.85),
-    inset 0 0 28px rgba(0, 0, 0, 0.7),
-    0 0 0 4px ${theme.color.chassis.brassDark},
-    0 0 0 5px ${theme.color.chassis.brassBase};
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-family: ${theme.font.mono};
-  color: ${theme.color.crt.phosphor};
-  text-shadow: ${theme.glow.phosphorHot};
-  letter-spacing: 0.04em;
-  padding: 4px;
-  text-align: center;
-  user-select: none;
-`;
-
-const HubDate = styled.div`
-  font-size: clamp(15px, 3.2vw, 22px);
-  line-height: 1.1;
-`;
-
-const HubMode = styled.div`
-  font-family: ${theme.font.display};
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  color: ${theme.color.crt.phosphorDim};
-  margin-top: 4px;
-  text-transform: uppercase;
 `;
 
 // Pointer rivet at 12 o'clock — purely visual reference.
@@ -120,34 +66,97 @@ const Pointer = styled.div`
   }
 `;
 
-// Knob "knurl" overlay — radial pattern to suggest grippable edge.
-const Knurl = styled.div`
+// Phosphor readout overlaid in the dial's center. Sits on top of the PNG's
+// baked-in center disc.
+const Hub = styled.div`
   position: absolute;
-  inset: 0;
-  border-radius: ${theme.radius.knob};
-  background: conic-gradient(
-    from 0deg,
-    rgba(0, 0, 0, 0.08) 0deg,
-    transparent 4deg,
-    transparent 8deg,
-    rgba(255, 220, 140, 0.1) 12deg
-  );
-  background-size: 24deg 24deg;
-  mix-blend-mode: overlay;
-  pointer-events: none;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 26%;
+  height: 26%;
+  border-radius: 999px;
+  background: radial-gradient(circle, ${theme.color.crt.screen} 0%, #02080A 100%);
+  box-shadow:
+    inset 0 4px 10px rgba(0, 0, 0, 0.85),
+    inset 0 0 28px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: ${theme.font.mono};
+  color: ${theme.color.crt.phosphor};
+  text-shadow: ${theme.glow.phosphorHot};
+  letter-spacing: 0.04em;
+  padding: 4px;
+  text-align: center;
+  user-select: none;
 `;
 
-// Sub-controls row (Random / specific year jump).
+const HubDate = styled.div`
+  font-size: clamp(13px, 2.8vw, 18px);
+  line-height: 1.1;
+`;
+
+const HubMode = styled.div<{ $pending: boolean }>`
+  font-family: ${theme.font.display};
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: ${(p) =>
+    p.$pending ? theme.color.crt.amberWarn : theme.color.crt.phosphorDim};
+  margin-top: 4px;
+  text-transform: uppercase;
+`;
+
 const Controls = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: ${theme.space.snug};
+  width: min(480px, 92vw);
+
+  @media (max-width: ${theme.breakpoints.md}) {
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
+const ControlBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const ControlLabel = styled.label`
+  font-family: ${theme.font.display};
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: ${theme.color.text.onChassisMuted};
+  text-align: center;
+`;
+
+const StepRow = styled.div`
+  display: flex;
+  gap: 4px;
+  align-items: center;
   justify-content: center;
-  margin-top: ${theme.space.snug};
-  flex-wrap: wrap;
+`;
+
+const StepValue = styled.div`
+  flex: 1;
+  text-align: center;
+  font-family: ${theme.font.mono};
+  font-size: 14px;
+  color: ${theme.color.crt.phosphor};
+  text-shadow: ${theme.glow.phosphorSoft};
+  background: ${theme.color.crt.screen};
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 4px;
+  padding: 6px;
+  min-width: 0;
 `;
 
 const Pill = styled.button`
-  padding: 6px ${theme.space.base};
+  padding: 6px 10px;
   border-radius: ${theme.radius.button};
   font-family: ${theme.font.display};
   font-size: 12px;
@@ -158,8 +167,10 @@ const Pill = styled.button`
   color: ${theme.color.text.onChassis};
   box-shadow: ${theme.shadow.buttonResting};
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  border: none;
   cursor: pointer;
-  min-height: 36px;
+  min-width: 36px;
+  min-height: 32px;
   transition:
     transform 60ms ease-out,
     box-shadow 60ms ease-out;
@@ -172,24 +183,103 @@ const Pill = styled.button`
     box-shadow: ${theme.shadow.buttonPressed};
   }
   &:disabled {
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 `;
 
+const DropDown = styled.select`
+  font-family: ${theme.font.mono};
+  font-size: 14px;
+  color: ${theme.color.crt.phosphor};
+  background: ${theme.color.crt.screen};
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 4px;
+  padding: 6px 8px;
+  min-height: 36px;
+  cursor: pointer;
+  text-shadow: ${theme.glow.phosphorSoft};
+
+  &:focus {
+    outline: 1px solid ${theme.color.chassis.brassBright};
+  }
+`;
+
+const TypedInput = styled.input<{ $invalid: boolean }>`
+  font-family: ${theme.font.mono};
+  font-size: 16px;
+  text-align: center;
+  color: ${(p) =>
+    p.$invalid ? theme.color.crt.amberWarn : theme.color.crt.phosphor};
+  background: ${theme.color.crt.screen};
+  border: 1px solid
+    ${(p) =>
+      p.$invalid
+        ? theme.color.crt.amberWarn
+        : 'rgba(212, 175, 55, 0.35)'};
+  border-radius: 4px;
+  padding: 8px 12px;
+  min-height: 40px;
+  text-shadow: ${(p) =>
+    p.$invalid ? theme.glow.indicatorAmber : theme.glow.phosphorSoft};
+  letter-spacing: 0.06em;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: 1px solid ${theme.color.chassis.brassBright};
+  }
+`;
+
+const CommitRow = styled.div`
+  display: flex;
+  gap: ${theme.space.snug};
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+`;
+
+const TuneInButton = styled.button<{ $armed: boolean }>`
+  width: 180px;
+  height: 56px;
+  padding: 0;
+  border: none;
+  background: url('/assets/button-cap.png') no-repeat center / 100% 100%;
+  font-family: ${theme.font.display};
+  letter-spacing: ${theme.tracking.display};
+  font-size: 15px;
+  text-transform: uppercase;
+  color: ${(p) =>
+    p.$armed ? theme.color.chassis.brassBright : theme.color.text.onChassisMuted};
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.65),
+    ${(p) => (p.$armed ? '0 0 8px rgba(91, 255, 138, 0.45)' : 'none')};
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+  cursor: ${(p) => (p.$armed ? 'pointer' : 'not-allowed')};
+  transition:
+    transform 60ms ease-out,
+    filter 120ms ease,
+    color 200ms ease;
+  opacity: ${(p) => (p.$armed ? 1 : 0.55)};
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5))
+      drop-shadow(0 0 8px rgba(212, 175, 55, 0.45));
+  }
+  &:active:not(:disabled) {
+    transform: translateY(2px);
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6));
+  }
+`;
+
+const RandomPill = styled(Pill)`
+  min-width: 100px;
+`;
+
 const MONTH_NAMES = [
-  'JAN',
-  'FEB',
-  'MAR',
-  'APR',
-  'MAY',
-  'JUN',
-  'JUL',
-  'AUG',
-  'SEP',
-  'OCT',
-  'NOV',
-  'DEC',
+  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
 ];
 
 function clampDay(year: number, month: number, day: number) {
@@ -208,188 +298,211 @@ function parseIso(iso: string) {
   return { year: y, month: m, day: d };
 }
 
+// Decade options: 1500s, 1600s, …, current decade.
+function decadeOptions(): { value: number; label: string }[] {
+  const opts: { value: number; label: string }[] = [];
+  for (let decade = 1500; decade <= MAX_YEAR; decade += decade < 1900 ? 100 : 10) {
+    opts.push({ value: decade, label: `${decade}s` });
+  }
+  // Always include the current decade.
+  const curDecade = Math.floor(MAX_YEAR / 10) * 10;
+  if (!opts.find((o) => o.value === curDecade)) {
+    opts.push({ value: curDecade, label: `${curDecade}s` });
+  }
+  return opts;
+}
+
 type Props = {
+  /** Committed date — what the chat is currently tuned to. */
   date: string;
   disabled?: boolean;
+  /** Fired only on explicit commit (TUNE IN, Random, or external preset). */
   onDateChange: (iso: string) => void;
 };
 
 export function DialAssembly({ date, disabled, onDateChange }: Props) {
-  const { year, month, day } = useMemo(() => parseIso(date), [date]);
+  // Pending state is detached from the committed date prop. The chat only
+  // reacts to commits via onDateChange.
+  const [pending, setPending] = useState(date);
+  const [typed, setTyped] = useState(date);
+  const [typedInvalid, setTypedInvalid] = useState(false);
 
-  const commit = useCallback(
+  // When the parent commits a different date externally (preset chip, etc.),
+  // sync our pending so the dial reflects the truth.
+  useEffect(() => {
+    setPending(date);
+    setTyped(date);
+    setTypedInvalid(false);
+  }, [date]);
+
+  const { year, month, day } = useMemo(() => parseIso(pending), [pending]);
+  const isDirty = pending !== date;
+
+  const mutatePending = useCallback(
     (next: { year?: number; month?: number; day?: number }) => {
-      if (disabled) return;
-      const y = next.year ?? year;
+      const y = Math.min(Math.max(MIN_YEAR, next.year ?? year), MAX_YEAR);
       const m = next.month ?? month;
       const d = next.day ?? day;
-      const yearClamped = Math.min(Math.max(MIN_YEAR, y), MAX_YEAR);
-      const iso = toIso(yearClamped, m, d);
+      const iso = toIso(y, m, d);
       if (!isValidDialDate(iso)) return;
-      if (iso === date) return;
-      onDateChange(iso);
+      setPending(iso);
+      setTyped(iso);
+      setTypedInvalid(false);
     },
-    [date, day, disabled, month, onDateChange, year]
+    [year, month, day]
   );
 
-  const adjustYear = (delta: number) => commit({ year: year + delta });
+  const adjustYear = (delta: number) => mutatePending({ year: year + delta });
   const adjustMonth = (delta: number) => {
     let m = month + delta;
     let y = year;
-    while (m < 1) {
-      m += 12;
-      y -= 1;
-    }
-    while (m > 12) {
-      m -= 12;
-      y += 1;
-    }
-    commit({ year: y, month: m });
+    while (m < 1) { m += 12; y -= 1; }
+    while (m > 12) { m -= 12; y += 1; }
+    mutatePending({ year: y, month: m });
   };
-  const adjustDay = (delta: number) => commit({ day: day + delta });
+  const adjustDay = (delta: number) => mutatePending({ day: day + delta });
 
-  // Tick marks every 25 years on the outer ring.
-  const yearTicks = useMemo(() => {
-    const arr: { angle: number; label?: string }[] = [];
-    // Show ~25 ticks evenly. Label every 100 years.
-    const ticks = 24;
-    for (let i = 0; i < ticks; i++) {
-      const yearAt = MIN_YEAR + Math.round(((MAX_YEAR - MIN_YEAR) / ticks) * i);
-      arr.push({
-        angle: (i / ticks) * 360,
-        label: yearAt % 100 === 0 || i === 0 ? String(yearAt) : undefined,
-      });
+  const onDecade = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const decade = parseInt(e.target.value, 10);
+    if (Number.isNaN(decade)) return;
+    // Snap to the middle-ish of that decade — or to today if user picked the
+    // current decade and we'd otherwise overshoot.
+    const mid = decade < 1900 ? decade + 50 : decade + 5;
+    const yClamped = Math.min(mid, MAX_YEAR);
+    mutatePending({ year: yClamped });
+  };
+
+  const onTyped = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setTyped(v);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v) && isValidDialDate(v)) {
+      setPending(v);
+      setTypedInvalid(false);
+    } else {
+      setTypedInvalid(true);
     }
-    return arr;
-  }, []);
+  };
 
-  const monthLabels = MONTH_NAMES;
-  const dayLabels = useMemo(() => Array.from({ length: 31 }, (_, i) => i + 1), []);
+  const onTypedBlur = () => {
+    // On blur, snap back to pending if user left something invalid.
+    if (typedInvalid) {
+      setTyped(pending);
+      setTypedInvalid(false);
+    }
+  };
+
+  const onTypedKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !typedInvalid && isDirty) {
+      onDateChange(pending);
+    }
+  };
+
+  const tuneIn = () => {
+    if (!isDirty || disabled) return;
+    onDateChange(pending);
+  };
+
+  const fireRandom = () => {
+    if (disabled) return;
+    onDateChange(randomDate());
+  };
+
+  const decades = useMemo(() => decadeOptions(), []);
+  const currentDecade = Math.floor(year / (year < 1900 ? 100 : 10)) * (year < 1900 ? 100 : 10);
 
   return (
-    <div>
-      <Frame role="group" aria-label="Time dial: year, month, day">
+    <Outer>
+      <DiscWrap role="group" aria-label="Time dial">
         <Pointer aria-hidden />
-
-        {/* Outer ring — YEAR */}
-        <Ring $size={100} $depth={0}>
-          <Knurl />
-          <Glyphs viewBox="-100 -100 200 200" aria-hidden>
-            <defs>
-              <path id="year-arc" d="M0,-86 a86,86 0 1,1 -0.01,0" fill="none" />
-            </defs>
-            <text
-              fontFamily={theme.font.display}
-              fontSize="7"
-              letterSpacing="0.6"
-              fill={theme.color.text.onChassis}
-              style={{ filter: 'drop-shadow(0 0.5px 0 rgba(0,0,0,0.55))' }}
-            >
-              {yearTicks
-                .filter((t) => t.label)
-                .map((t, i, arr) => {
-                  // Distribute labels evenly around the arc — at fractional offsets.
-                  const offset = (i / arr.length) * 100;
-                  return (
-                    <textPath
-                      key={`y${i}`}
-                      href="#year-arc"
-                      startOffset={`${offset}%`}
-                    >
-                      {t.label}
-                    </textPath>
-                  );
-                })}
-            </text>
-          </Glyphs>
-        </Ring>
-
-        {/* Middle ring — MONTH */}
-        <Ring $size={66} $depth={20}>
-          <Knurl />
-          <Glyphs viewBox="-100 -100 200 200" aria-hidden>
-            <defs>
-              <path id="month-arc" d="M0,-62 a62,62 0 1,1 -0.01,0" fill="none" />
-            </defs>
-            <text
-              fontFamily={theme.font.display}
-              fontSize="7"
-              letterSpacing="1.2"
-              fill={theme.color.text.onChassis}
-              style={{ filter: 'drop-shadow(0 0.5px 0 rgba(0,0,0,0.55))' }}
-            >
-              {monthLabels.map((m, i) => (
-                <textPath
-                  key={`m${i}`}
-                  href="#month-arc"
-                  startOffset={`${(i / 12) * 100}%`}
-                >
-                  {m}
-                </textPath>
-              ))}
-            </text>
-          </Glyphs>
-        </Ring>
-
-        {/* Inner ring — DAY */}
-        <Ring $size={42} $depth={36}>
-          <Knurl />
-          <Glyphs viewBox="-100 -100 200 200" aria-hidden>
-            <defs>
-              <path id="day-arc" d="M0,-44 a44,44 0 1,1 -0.01,0" fill="none" />
-            </defs>
-            <text
-              fontFamily={theme.font.display}
-              fontSize="5.5"
-              letterSpacing="0.8"
-              fill={theme.color.text.onChassis}
-              style={{ filter: 'drop-shadow(0 0.5px 0 rgba(0,0,0,0.55))' }}
-            >
-              {dayLabels.map((d, i) => (
-                <textPath
-                  key={`d${i}`}
-                  href="#day-arc"
-                  startOffset={`${(i / 31) * 100}%`}
-                >
-                  {d}
-                </textPath>
-              ))}
-            </text>
-          </Glyphs>
-        </Ring>
-
         <Hub aria-live="polite">
           <HubDate>
             {String(year).padStart(4, '0')}-{String(month).padStart(2, '0')}-
-            {String(day).padStart(2, '0')}
+            {String(clampDay(year, month, day)).padStart(2, '0')}
           </HubDate>
-          <HubMode>{MONTH_NAMES[month - 1]} {day}, {year}</HubMode>
+          <HubMode $pending={isDirty}>
+            {isDirty ? 'PENDING' : `${MONTH_NAMES[month - 1]} ${day} · ${year}`}
+          </HubMode>
         </Hub>
-      </Frame>
+      </DiscWrap>
 
       <Controls>
-        <Pill type="button" disabled={disabled} onClick={() => adjustYear(-1)} aria-label="Year minus one">
-          − YR
-        </Pill>
-        <Pill type="button" disabled={disabled} onClick={() => adjustYear(1)} aria-label="Year plus one">
-          + YR
-        </Pill>
-        <Pill type="button" disabled={disabled} onClick={() => adjustMonth(-1)} aria-label="Month minus one">
-          − MO
-        </Pill>
-        <Pill type="button" disabled={disabled} onClick={() => adjustMonth(1)} aria-label="Month plus one">
-          + MO
-        </Pill>
-        <Pill type="button" disabled={disabled} onClick={() => adjustDay(-1)} aria-label="Day minus one">
-          − DY
-        </Pill>
-        <Pill type="button" disabled={disabled} onClick={() => adjustDay(1)} aria-label="Day plus one">
-          + DY
-        </Pill>
-        <Pill type="button" disabled={disabled} onClick={() => onDateChange(randomDate())}>
-          Random
-        </Pill>
+        <ControlBlock>
+          <ControlLabel>Year</ControlLabel>
+          <StepRow>
+            <Pill type="button" disabled={disabled} onClick={() => adjustYear(-1)} aria-label="Year minus one">−</Pill>
+            <StepValue>{year}</StepValue>
+            <Pill type="button" disabled={disabled} onClick={() => adjustYear(1)} aria-label="Year plus one">+</Pill>
+          </StepRow>
+        </ControlBlock>
+        <ControlBlock>
+          <ControlLabel>Month</ControlLabel>
+          <StepRow>
+            <Pill type="button" disabled={disabled} onClick={() => adjustMonth(-1)} aria-label="Month minus one">−</Pill>
+            <StepValue>{MONTH_NAMES[month - 1]}</StepValue>
+            <Pill type="button" disabled={disabled} onClick={() => adjustMonth(1)} aria-label="Month plus one">+</Pill>
+          </StepRow>
+        </ControlBlock>
+        <ControlBlock>
+          <ControlLabel>Day</ControlLabel>
+          <StepRow>
+            <Pill type="button" disabled={disabled} onClick={() => adjustDay(-1)} aria-label="Day minus one">−</Pill>
+            <StepValue>{String(clampDay(year, month, day)).padStart(2, '0')}</StepValue>
+            <Pill type="button" disabled={disabled} onClick={() => adjustDay(1)} aria-label="Day plus one">+</Pill>
+          </StepRow>
+        </ControlBlock>
       </Controls>
-    </div>
+
+      <Controls>
+        <ControlBlock>
+          <ControlLabel htmlFor="decade-jump">Decade jump</ControlLabel>
+          <DropDown
+            id="decade-jump"
+            value={currentDecade}
+            onChange={onDecade}
+            disabled={disabled}
+            aria-label="Jump to a decade"
+          >
+            {decades.map((d) => (
+              <option key={d.value} value={d.value}>{d.label}</option>
+            ))}
+          </DropDown>
+        </ControlBlock>
+        <ControlBlock style={{ gridColumn: 'span 2' }}>
+          <ControlLabel htmlFor="typed-date">
+            Type a date (YYYY-MM-DD, {config.MIN_DATE} → {TODAY_ISO})
+          </ControlLabel>
+          <TypedInput
+            id="typed-date"
+            type="text"
+            inputMode="numeric"
+            value={typed}
+            onChange={onTyped}
+            onBlur={onTypedBlur}
+            onKeyDown={onTypedKey}
+            disabled={disabled}
+            $invalid={typedInvalid}
+            placeholder="YYYY-MM-DD"
+            spellCheck={false}
+            aria-invalid={typedInvalid}
+            aria-describedby={typedInvalid ? 'typed-date-error' : undefined}
+          />
+        </ControlBlock>
+      </Controls>
+
+      <CommitRow>
+        <TuneInButton
+          type="button"
+          onClick={tuneIn}
+          disabled={disabled || !isDirty}
+          $armed={isDirty && !disabled}
+          aria-label={isDirty ? 'Tune in to the pending date' : 'No pending change'}
+        >
+          {isDirty ? 'Tune In' : 'Tuned In'}
+        </TuneInButton>
+        <RandomPill type="button" disabled={disabled} onClick={fireRandom}>
+          Random
+        </RandomPill>
+      </CommitRow>
+    </Outer>
   );
 }

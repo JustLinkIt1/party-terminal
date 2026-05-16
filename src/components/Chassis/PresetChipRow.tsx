@@ -7,6 +7,7 @@ const Row = styled.div`
   gap: ${theme.space.snug};
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
 
   @media (max-width: ${theme.breakpoints.md}) {
     flex-wrap: nowrap;
@@ -29,41 +30,42 @@ const Row = styled.div`
   }
 `;
 
+// Brass button cap rendered via button-cap.png. Label sits engraved on top.
 const Cap = styled.button<{ $active: boolean }>`
   position: relative;
   flex-shrink: 0;
   scroll-snap-align: start;
-  padding: ${theme.space.tight} ${theme.space.base};
-  border-radius: ${theme.radius.button};
+  width: 110px;
+  height: 56px;
+  padding: 0;
+  border: none;
+  background: url('/assets/button-cap.png') no-repeat center / 100% 100%;
   font-family: ${theme.font.display};
   letter-spacing: ${theme.tracking.display};
   font-size: 13px;
   text-transform: uppercase;
-  background: ${theme.texture.brass};
-  background-blend-mode: overlay, normal;
   color: ${(p) =>
     p.$active ? theme.color.chassis.brassBright : theme.color.text.onChassis};
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
-  box-shadow: ${(p) =>
-    p.$active ? theme.shadow.buttonPressed : theme.shadow.buttonResting};
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.65),
+    0 -1px 0 rgba(212, 175, 55, 0.18);
   transform: translateY(${(p) => (p.$active ? '1px' : '0')});
   transition:
     transform 60ms ease-out,
-    box-shadow 60ms ease-out,
+    filter 120ms ease,
     color 200ms ease;
   cursor: pointer;
-  min-height: 44px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow:
-      ${theme.shadow.buttonResting},
-      ${theme.glow.brassWarm};
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5))
+      drop-shadow(0 0 6px rgba(212, 175, 55, 0.35));
   }
 
   &:active:not(:disabled) {
-    transform: translateY(1px);
-    box-shadow: ${theme.shadow.buttonPressed};
+    transform: translateY(2px);
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6));
   }
 
   &:disabled {
@@ -74,15 +76,14 @@ const Cap = styled.button<{ $active: boolean }>`
   ${(p) =>
     p.$active &&
     css`
-      &::after {
-        content: '';
-        position: absolute;
-        inset: 3px;
-        border: 1px solid rgba(212, 175, 55, 0.45);
-        border-radius: 4px;
-        pointer-events: none;
-      }
+      color: ${theme.color.chassis.brassBright};
     `}
+
+  @media (max-width: ${theme.breakpoints.md}) {
+    width: 96px;
+    height: 48px;
+    font-size: 12px;
+  }
 `;
 
 type Props = {

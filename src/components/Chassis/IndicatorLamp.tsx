@@ -29,24 +29,22 @@ const Bezel = styled.span`
   gap: ${theme.space.snug};
 `;
 
-const Socket = styled.span`
-  width: 22px;
-  height: 22px;
-  border-radius: ${theme.radius.knob};
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255, 220, 140, 0.6) 0%, transparent 35%),
-    radial-gradient(circle, #5C4519 0%, #2A1C0A 100%);
-  box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.6),
-    0 1px 0 rgba(212, 175, 55, 0.3);
+// Brass bezel rendered from indicator-lamp.png. The lit bulb sits in the
+// center via an absolutely-positioned span.
+const LampWrap = styled.span`
+  position: relative;
+  width: 36px;
+  height: 36px;
+  background: url('/assets/indicator-lamp.png') no-repeat center / contain;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
 
   @media (max-width: ${theme.breakpoints.md}) {
-    width: 16px;
-    height: 16px;
+    width: 26px;
+    height: 26px;
   }
 `;
 
@@ -65,8 +63,8 @@ const Bulb = styled.span<{ $color: Color; $lit: boolean }>`
     `}
 
   @media (max-width: ${theme.breakpoints.md}) {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
   }
 `;
 
@@ -92,9 +90,9 @@ type Props = {
 export function IndicatorLamp({ color, lit, label }: Props) {
   return (
     <Bezel aria-label={`${label} ${lit ? 'lit' : 'off'}`}>
-      <Socket aria-hidden>
+      <LampWrap aria-hidden>
         <Bulb $color={color} $lit={lit} />
-      </Socket>
+      </LampWrap>
       <Caption>{label}</Caption>
     </Bezel>
   );
