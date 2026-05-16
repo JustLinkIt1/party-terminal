@@ -28,7 +28,8 @@ const Plate = styled.header`
   }
 
   @media (max-width: ${theme.breakpoints.md}) {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
     padding: ${theme.space.snug} ${theme.space.base};
     gap: ${theme.space.snug};
   }
@@ -56,6 +57,7 @@ const Wordmark = styled.h1`
 
   @media (max-width: ${theme.breakpoints.md}) {
     font-size: 22px;
+    text-align: center;
   }
 `;
 
@@ -82,8 +84,15 @@ const CaBlock = styled.div`
   @media (max-width: ${theme.breakpoints.md}) {
     width: 100%;
     flex-wrap: wrap;
+    justify-content: center;
     gap: ${theme.space.tight};
     font-size: 12px;
+
+    & > a {
+      flex: 1 1 100%;
+      justify-content: center;
+      margin-top: ${theme.space.tight};
+    }
   }
 `;
 

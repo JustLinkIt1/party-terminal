@@ -72,6 +72,7 @@ const ScreenRow = styled.div`
 
   @media (max-width: ${theme.breakpoints.md}) {
     grid-template-columns: 1fr;
+    gap: ${theme.space.snug};
   }
 `;
 

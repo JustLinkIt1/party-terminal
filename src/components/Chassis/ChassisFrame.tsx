@@ -47,9 +47,14 @@ const Body = styled.div`
   }
 
   @media (max-width: ${theme.breakpoints.md}) {
-    padding: ${theme.space.loose} ${theme.space.base} ${theme.space.base};
+    padding: ${theme.space.loose} ${theme.space.snug} ${theme.space.base};
     margin: 12px auto;
     width: calc(100vw - 12px);
+  }
+
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: ${theme.space.base} ${theme.space.tight} ${theme.space.snug};
+    margin: 8px auto;
   }
 `;
 
@@ -83,6 +88,11 @@ const EdgeRow = styled.div<{ $edge: 'top' | 'bottom' }>`
   @media (max-width: ${theme.breakpoints.md}) {
     left: 24px;
     right: 24px;
+  }
+
+  @media (max-width: ${theme.breakpoints.sm}) {
+    left: 16px;
+    right: 16px;
   }
 `;
 

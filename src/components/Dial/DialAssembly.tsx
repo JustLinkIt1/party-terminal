@@ -115,7 +115,7 @@ const Controls = styled.div`
   width: min(480px, 92vw);
 
   @media (max-width: ${theme.breakpoints.md}) {
-    grid-template-columns: 1fr 1fr;
+    gap: ${theme.space.tight};
   }
 `;
 

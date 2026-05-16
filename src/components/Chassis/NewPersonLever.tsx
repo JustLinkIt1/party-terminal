@@ -16,9 +16,10 @@ const Frame = styled.div`
   @media (max-width: ${theme.breakpoints.md}) {
     width: 100%;
     height: auto;
-    flex-direction: row;
-    gap: ${theme.space.snug};
+    flex-direction: column;
+    gap: ${theme.space.tight};
     justify-content: center;
+    padding: ${theme.space.tight} 0;
   }
 `;
 
@@ -51,8 +52,8 @@ const LeverButton = styled.button<{ $throwing: boolean }>`
   }
 
   @media (max-width: ${theme.breakpoints.md}) {
-    width: 40px;
-    height: 56px;
+    width: 56px;
+    height: 132px;
   }
 `;
 
@@ -68,7 +69,7 @@ const Caption = styled.span`
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
 
   @media (max-width: ${theme.breakpoints.md}) {
-    font-size: 12px;
+    font-size: 11px;
     margin-top: 0;
   }
 `;

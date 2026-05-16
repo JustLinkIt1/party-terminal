@@ -15,6 +15,10 @@ export const Section = styled.section`
   @media (max-width: ${theme.breakpoints.md}) {
     padding: ${theme.space.loose} ${theme.space.base};
   }
+
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: ${theme.space.base} ${theme.space.snug};
+  }
 `;
 
 export const SectionTitle = styled.h2`
