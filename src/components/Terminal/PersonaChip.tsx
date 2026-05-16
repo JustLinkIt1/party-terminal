@@ -2,27 +2,27 @@ import styled from 'styled-components';
 import { theme } from '../../theme';
 
 const Chip = styled.div`
-  padding: ${theme.space(1)} ${theme.space(2)};
-  font-size: 14px;
-  color: ${theme.colors.phosphorDim};
-  border-bottom: 1px solid ${theme.colors.border};
-  text-shadow: none;
+  padding: ${theme.space.tight} 0 ${theme.space.snug};
+  border-bottom: 1px dashed rgba(91, 255, 138, 0.18);
   display: flex;
-  gap: ${theme.space(2)};
-  align-items: center;
+  gap: ${theme.space.snug};
+  align-items: baseline;
+  font-family: ${theme.font.mono};
+  margin-bottom: ${theme.space.snug};
 `;
 
 const Tag = styled.span`
-  color: ${theme.colors.phosphor};
-  text-shadow: ${theme.glow.soft};
+  color: ${theme.color.crt.phosphorDim};
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   font-size: 12px;
+  text-shadow: ${theme.glow.phosphorSoft};
 `;
 
 const Body = styled.span`
-  color: ${theme.colors.text};
-  text-shadow: ${theme.glow.soft};
+  color: ${theme.color.text.onScreen};
+  text-shadow: ${theme.glow.phosphorHot};
+  font-size: 17px;
 `;
 
 type Props = { persona: string | null };

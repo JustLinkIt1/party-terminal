@@ -1,18 +1,41 @@
 import { KeyboardEvent, useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../theme';
+import { caretBlink } from '../../styles/keyframes';
 
 const Row = styled.div`
   display: flex;
   align-items: center;
-  border-top: 1px solid ${theme.colors.border};
-  padding-top: ${theme.space(2)};
-  gap: ${theme.space(2)};
+  border-top: 1px solid rgba(91, 255, 138, 0.12);
+  padding-top: ${theme.space.snug};
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  gap: ${theme.space.snug};
+  font-family: ${theme.font.mono};
 `;
 
 const Caret = styled.span`
-  color: ${theme.colors.phosphor};
+  color: ${theme.color.crt.phosphor};
+  text-shadow: ${theme.glow.phosphorHot};
   flex-shrink: 0;
+  font-size: 20px;
+
+  &::after {
+    content: '';
+    display: inline-block;
+    width: 9px;
+    height: 1em;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    background: ${theme.color.crt.phosphor};
+    box-shadow: ${theme.glow.phosphorHot};
+    animation: ${caretBlink} 1100ms steps(1) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none;
+    }
+  }
 `;
 
 const Input = styled.input`
@@ -20,20 +43,26 @@ const Input = styled.input`
   background: transparent;
   border: none;
   outline: none;
-  color: ${theme.colors.phosphor};
+  color: ${theme.color.text.onScreenUser};
   font-family: inherit;
-  font-size: 18px;
-  text-shadow: ${theme.glow.text};
-  caret-color: ${theme.colors.phosphor};
+  font-size: 19px;
+  text-shadow: ${theme.glow.phosphorSoft};
+  caret-color: ${theme.color.crt.phosphor};
+  letter-spacing: ${theme.tracking.mono};
+
   &::placeholder {
-    color: ${theme.colors.phosphorDim};
-    opacity: 0.6;
+    color: ${theme.color.crt.phosphorDim};
+    opacity: 0.7;
+    text-shadow: none;
+    font-style: italic;
   }
+
   &:disabled {
-    opacity: 0.4;
+    opacity: 0.55;
   }
+
   @media (max-width: ${theme.breakpoints.sm}) {
-    font-size: 16px; /* prevent iOS auto-zoom */
+    font-size: 16px; /* avoid iOS auto-zoom */
   }
 `;
 
@@ -77,6 +106,7 @@ export function PromptInput({ disabled, placeholder, onSubmit, maxLength = 500 }
         spellCheck={false}
         autoComplete="off"
         autoCapitalize="off"
+        aria-label="Terminal prompt"
       />
     </Row>
   );

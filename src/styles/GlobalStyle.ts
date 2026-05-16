@@ -9,11 +9,11 @@ export const GlobalStyle = createGlobalStyle`
   html, body, #root {
     margin: 0;
     padding: 0;
-    height: 100%;
-    background-color: ${theme.colors.bg};
-    color: ${theme.colors.text};
-    font-family: ${theme.font.mono};
-    line-height: 1.4;
+    min-height: 100%;
+    background-color: ${theme.color.chassis.void};
+    color: ${theme.color.text.onChassis};
+    font-family: ${theme.font.body};
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -22,45 +22,42 @@ export const GlobalStyle = createGlobalStyle`
   body {
     min-width: 320px;
     overflow-x: hidden;
+    /* Workshop backdrop: pooled lamp light at top-left, darkness at the rim. */
+    background:
+      radial-gradient(ellipse at 18% 8%, rgba(232, 163, 61, 0.10) 0%, transparent 38%),
+      radial-gradient(ellipse at 82% 92%, rgba(212, 175, 55, 0.04) 0%, transparent 40%),
+      ${theme.color.chassis.void};
+    background-attachment: fixed;
   }
 
   a {
-    color: ${theme.colors.phosphor};
+    color: ${theme.color.chassis.brassBright};
     text-decoration: underline;
     text-underline-offset: 3px;
-    text-decoration-color: ${theme.colors.phosphorMuted};
-    transition: text-shadow 0.15s ease;
+    text-decoration-color: ${theme.color.chassis.brassBase};
+    transition: text-shadow 0.18s ${theme.motion.overshoot};
   }
   a:hover {
-    text-shadow: ${theme.glow.soft};
+    text-shadow: ${theme.glow.brassWarm};
   }
 
   button {
     font-family: inherit;
     color: inherit;
     background: transparent;
-    border: 1px solid ${theme.colors.phosphorDim};
-    padding: 0.5em 1em;
+    border: none;
     cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    transition: background 0.15s ease, text-shadow 0.15s ease, border-color 0.15s ease;
-  }
-  button:hover:not(:disabled) {
-    background: rgba(0, 255, 0, 0.08);
-    text-shadow: ${theme.glow.soft};
-    border-color: ${theme.colors.phosphor};
+    padding: 0;
   }
   button:disabled {
-    opacity: 0.4;
     cursor: not-allowed;
   }
   button:focus-visible {
-    outline: 1px solid ${theme.colors.phosphor};
-    outline-offset: 2px;
+    outline: 1px solid ${theme.color.chassis.brassBright};
+    outline-offset: 3px;
   }
 
-  input, select {
+  input, select, textarea {
     font-family: inherit;
     color: inherit;
     background: transparent;
@@ -69,24 +66,25 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   ::selection {
-    background: ${theme.colors.phosphor};
-    color: ${theme.colors.bg};
+    background: ${theme.color.crt.phosphor};
+    color: ${theme.color.crt.screen};
   }
 
-  /* Phosphor scrollbar */
+  /* Brass scrollbar */
   *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
   *::-webkit-scrollbar-track {
-    background: ${theme.colors.bg};
+    background: ${theme.color.chassis.brassDark};
   }
   *::-webkit-scrollbar-thumb {
-    background: ${theme.colors.phosphorMuted};
-    border-radius: 0;
+    background: ${theme.color.chassis.brassBase};
+    border: 2px solid ${theme.color.chassis.brassDark};
+    border-radius: 6px;
   }
   *::-webkit-scrollbar-thumb:hover {
-    background: ${theme.colors.phosphorDim};
+    background: ${theme.color.chassis.brass};
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -5,58 +5,70 @@ import { truncateCa } from '../../lib/format';
 import { CopyButton } from '../CopyButton';
 
 const FooterWrap = styled.footer`
-  border-top: 1px solid ${theme.colors.phosphorMuted};
-  margin-top: ${theme.space(8)};
-  padding: ${theme.space(8)} ${theme.space(4)};
+  border-top: 1px solid rgba(212, 175, 55, 0.18);
+  margin-top: ${theme.space.loose};
+  padding: ${theme.space.panel} ${theme.space.base};
   display: flex;
   flex-direction: column;
-  gap: ${theme.space(4)};
+  gap: ${theme.space.base};
   align-items: center;
   text-align: center;
-  color: ${theme.colors.phosphorDim};
+  font-family: ${theme.font.body};
+  color: ${theme.color.text.onChassisMuted};
   font-size: 14px;
+  line-height: 1.6;
 `;
 
 const Brand = styled.div`
-  color: ${theme.colors.phosphor};
-  text-shadow: ${theme.glow.text};
+  font-family: ${theme.font.display};
   font-size: 22px;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: ${theme.color.text.onChassis};
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
 `;
 
 const Links = styled.div`
   display: flex;
-  gap: ${theme.space(5)};
+  gap: ${theme.space.loose};
   flex-wrap: wrap;
   justify-content: center;
 `;
 
 const Link = styled.a`
-  color: ${theme.colors.phosphor};
-  text-shadow: ${theme.glow.soft};
+  font-family: ${theme.font.display};
+  letter-spacing: ${theme.tracking.display};
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 14px;
+  font-size: 13px;
+  color: ${theme.color.chassis.brassBright};
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
 `;
 
 const CaRow = styled.div`
   display: flex;
-  gap: ${theme.space(2)};
+  gap: ${theme.space.tight};
   align-items: center;
   flex-wrap: wrap;
   justify-content: center;
+  font-family: ${theme.font.display};
+  letter-spacing: ${theme.tracking.display};
+  text-transform: uppercase;
+  font-size: 12px;
 `;
 
 const Mono = styled.span`
   font-family: ${theme.font.mono};
-  color: ${theme.colors.phosphor};
-  text-shadow: ${theme.glow.soft};
+  color: ${theme.color.crt.phosphor};
+  text-shadow: ${theme.glow.phosphorSoft};
+  background: ${theme.color.crt.screen};
+  padding: 2px ${theme.space.tight};
+  border-radius: 3px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.7);
+  letter-spacing: 0;
 `;
 
 const Disclaimer = styled.div`
   max-width: 60ch;
-  line-height: 1.5;
 `;
 
 type Props = { onCopy?: (msg: string) => void };
@@ -72,7 +84,7 @@ export function Footer({ onCopy }: Props) {
         <Link href="https://pump.fun" target="_blank" rel="noopener noreferrer">pump.fun</Link>
       </Links>
       <CaRow>
-        <span>CA:</span>
+        <span>CA</span>
         <Mono>{placeholder ? 'AWAITING DEPLOY' : truncateCa(config.CA)}</Mono>
         {!placeholder && (
           <CopyButton
@@ -83,9 +95,9 @@ export function Footer({ onCopy }: Props) {
       </CaRow>
       <Disclaimer>
         Not financial advice. Memecoins are gambling. The people on the other
-        end of the line are imagined &mdash; large language models acting as
-        ordinary historical persons &mdash; not historical record. Do your own
-        research, and ride at your own risk.
+        end of the line are imagined — large language models acting as ordinary
+        historical persons — not historical record. Do your own research, and
+        ride at your own risk.
       </Disclaimer>
     </FooterWrap>
   );

@@ -6,8 +6,8 @@ import { formatDateForDisplay } from '../../lib/format';
 const Grid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
-  gap: ${theme.space(3)};
-  margin-top: ${theme.space(4)};
+  gap: ${theme.space.snug};
+  margin-top: ${theme.space.base};
 
   @media (min-width: ${theme.breakpoints.sm}) {
     grid-template-columns: repeat(2, 1fr);
@@ -18,45 +18,62 @@ const Grid = styled.div`
 `;
 
 const Card = styled.button`
+  position: relative;
   text-align: left;
-  padding: ${theme.space(4)};
-  border: 1px solid ${theme.colors.border};
-  background: rgba(0, 12, 0, 0.4);
+  padding: ${theme.space.base};
+  border-radius: ${theme.radius.panel};
+  background: ${theme.texture.brassDarker};
+  background-blend-mode: multiply;
+  box-shadow: ${theme.shadow.panelInset};
   display: flex;
   flex-direction: column;
-  gap: ${theme.space(2)};
+  gap: ${theme.space.snug};
   cursor: pointer;
-  font-size: 16px;
-  text-transform: none;
-  letter-spacing: normal;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  font-family: ${theme.font.body};
+  color: ${theme.color.text.onChassis};
+  transition: transform 220ms ${theme.motion.overshoot},
+    box-shadow 220ms ${theme.motion.overshoot};
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(212, 175, 55, 0.18);
+    border-radius: 5px;
+    pointer-events: none;
+  }
+
   &:hover {
-    border-color: ${theme.colors.phosphor};
-    background: rgba(0, 30, 0, 0.5);
+    transform: translateY(-2px);
+    box-shadow:
+      ${theme.shadow.panelInset},
+      0 6px 18px rgba(0, 0, 0, 0.55),
+      ${theme.glow.brassWarm};
   }
 `;
 
 const Date_ = styled.div`
-  color: ${theme.colors.phosphor};
-  text-shadow: ${theme.glow.soft};
-  font-size: 14px;
+  font-family: ${theme.font.display};
+  font-size: 13px;
+  letter-spacing: ${theme.tracking.display};
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  color: ${theme.color.chassis.brassBright};
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
 `;
 
 const Headline = styled.div`
-  color: ${theme.colors.text};
-  font-size: 18px;
-  line-height: 1.4;
+  font-size: 16px;
+  line-height: 1.45;
+  font-weight: 500;
 `;
 
 const Quote = styled.div`
-  color: ${theme.colors.phosphorDim};
+  color: ${theme.color.text.onChassisMuted};
   font-style: italic;
-  font-size: 15px;
-  line-height: 1.4;
-  border-left: 2px solid ${theme.colors.border};
-  padding-left: ${theme.space(2)};
+  font-size: 14px;
+  line-height: 1.5;
+  border-left: 2px solid ${theme.color.chassis.brassBase};
+  padding-left: ${theme.space.snug};
 `;
 
 const DISPATCHES = [
@@ -100,9 +117,7 @@ export function SampleDispatches({ onPickDate }: Props) {
   return (
     <Section>
       <SectionTitle>Try a famous day</SectionTitle>
-      <SectionLead>
-        Or turn the dial yourself. Any day, 1500 to now.
-      </SectionLead>
+      <SectionLead>Or turn the dial yourself. Any day, 1500 to now.</SectionLead>
       <Grid>
         {DISPATCHES.map((d) => (
           <Card
@@ -112,6 +127,7 @@ export function SampleDispatches({ onPickDate }: Props) {
               onPickDate(d.date);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
+            aria-label={`Talk to someone on ${formatDateForDisplay(d.date)} — ${d.headline}`}
           >
             <Date_>{formatDateForDisplay(d.date)}</Date_>
             <Headline>{d.headline}</Headline>

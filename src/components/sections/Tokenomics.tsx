@@ -6,8 +6,9 @@ import { config } from '../../config';
 const Grid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
-  gap: ${theme.space(3)};
-  margin-top: ${theme.space(4)};
+  gap: ${theme.space.snug};
+  margin-top: ${theme.space.base};
+
   @media (min-width: ${theme.breakpoints.sm}) {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -17,40 +18,62 @@ const Grid = styled.div`
 `;
 
 const Stat = styled.div`
-  border: 1px solid ${theme.colors.border};
-  padding: ${theme.space(4)};
-  background: rgba(0, 12, 0, 0.4);
+  position: relative;
+  padding: ${theme.space.base};
+  border-radius: ${theme.radius.panel};
+  background: ${theme.texture.brassDarker};
+  background-blend-mode: multiply;
+  box-shadow: ${theme.shadow.panelInset};
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(212, 175, 55, 0.18);
+    border-radius: 5px;
+    pointer-events: none;
+  }
 `;
 
 const Label = styled.div`
-  color: ${theme.colors.phosphorDim};
-  font-size: 13px;
+  color: ${theme.color.text.onChassisMuted};
+  font-family: ${theme.font.display};
+  font-size: 12px;
+  letter-spacing: ${theme.tracking.display};
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
 `;
 
 const Value = styled.div`
-  color: ${theme.colors.phosphor};
-  text-shadow: ${theme.glow.soft};
-  font-size: 28px;
-  margin-top: ${theme.space(2)};
+  color: ${theme.color.text.onChassis};
+  font-family: ${theme.font.display};
+  font-size: 24px;
+  margin-top: ${theme.space.tight};
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  letter-spacing: 0.04em;
 `;
 
 const DexFrame = styled.div`
-  margin-top: ${theme.space(6)};
-  border: 1px solid ${theme.colors.phosphorMuted};
+  margin-top: ${theme.space.loose};
+  border-radius: ${theme.radius.panel};
+  overflow: hidden;
+  border: 2px solid ${theme.color.chassis.brassDark};
+  background: ${theme.color.chassis.void};
   height: 400px;
+
   iframe {
     width: 100%;
     height: 100%;
     border: 0;
+    display: block;
   }
 `;
 
 const Note = styled.p`
-  margin-top: ${theme.space(4)};
-  color: ${theme.colors.phosphorDim};
+  margin-top: ${theme.space.loose};
+  color: ${theme.color.text.onChassisMuted};
   font-size: 14px;
+  line-height: 1.5;
 `;
 
 export function Tokenomics() {

@@ -4,21 +4,27 @@ import { theme } from '../theme';
 
 const ToastWrap = styled.div<{ $visible: boolean }>`
   position: fixed;
-  bottom: calc(${theme.space(6)} + env(safe-area-inset-bottom, 0px));
+  bottom: calc(${theme.space.loose} + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%) translateY(${(p) => (p.$visible ? '0' : '20px')});
-  background: ${theme.colors.bgRaised};
-  border: 1px solid ${theme.colors.phosphor};
-  color: ${theme.colors.phosphor};
-  text-shadow: ${theme.glow.soft};
-  padding: ${theme.space(2)} ${theme.space(4)};
-  font-size: 14px;
+  background: ${theme.texture.brassDarker};
+  background-blend-mode: multiply;
+  border-radius: ${theme.radius.panel};
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow:
+    ${theme.shadow.panelInset},
+    0 6px 18px rgba(0, 0, 0, 0.55);
+  color: ${theme.color.text.onChassis};
+  font-family: ${theme.font.display};
+  letter-spacing: ${theme.tracking.display};
+  padding: ${theme.space.snug} ${theme.space.loose};
+  font-size: 13px;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
   opacity: ${(p) => (p.$visible ? 1 : 0)};
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.25s ease, transform 0.25s ${theme.motion.overshoot};
   pointer-events: none;
-  z-index: 1000;
+  z-index: ${theme.z.modal};
 `;
 
 type Props = { message: string | null; onClear: () => void; ms?: number };

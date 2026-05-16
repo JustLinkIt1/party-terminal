@@ -6,28 +6,40 @@ import type { ChatMessage } from './useChat';
 const LogContainer = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: ${theme.space(2)} 0;
+  padding: ${theme.space.snug} 0;
   min-height: 200px;
+  font-family: ${theme.font.mono};
+  font-size: 19px;
+  line-height: 1.45;
+  filter: blur(0.35px);
 `;
 
 const Line = styled.p<{ $role: 'user' | 'assistant' | 'system' }>`
-  margin: 0 0 ${theme.space(2)} 0;
-  line-height: 1.4;
+  margin: 0 0 ${theme.space.snug} 0;
   white-space: pre-wrap;
   word-wrap: break-word;
-  color: ${(p) => (p.$role === 'system' ? theme.colors.phosphorDim : theme.colors.phosphor)};
-  opacity: ${(p) => (p.$role === 'system' ? 0.7 : 1)};
+  color: ${(p) =>
+    p.$role === 'system'
+      ? theme.color.crt.amberWarn
+      : p.$role === 'user'
+        ? theme.color.text.onScreenUser
+        : theme.color.text.onScreen};
+  text-shadow: ${(p) =>
+    p.$role === 'user' ? theme.glow.phosphorHot : theme.glow.phosphorSoft};
 `;
 
 const Prefix = styled.span`
-  color: ${theme.colors.phosphorDim};
-  margin-right: ${theme.space(1)};
+  color: ${theme.color.crt.phosphorDim};
+  margin-right: ${theme.space.tight};
+  text-shadow: ${theme.glow.phosphorSoft};
 `;
 
 const Typing = styled.p`
-  margin: 0 0 ${theme.space(2)} 0;
-  color: ${theme.colors.phosphorDim};
+  margin: 0 0 ${theme.space.snug} 0;
+  color: ${theme.color.crt.phosphorDim};
   font-style: italic;
+  text-shadow: ${theme.glow.phosphorSoft};
+
   &::after {
     content: '_';
     animation: blink 1s steps(1) infinite;
@@ -52,10 +64,10 @@ export function MessageLog({ messages, status, error }: Props) {
   }, [messages, status, error]);
 
   return (
-    <LogContainer>
+    <LogContainer role="log" aria-live="polite">
       {messages.map((m, i) => (
         <Line key={i} $role={m.role}>
-          <Prefix>{m.role === 'user' ? '&gt;' : '·'}</Prefix>
+          <Prefix>{m.role === 'user' ? '>' : '·'}</Prefix>
           {m.text}
         </Line>
       ))}

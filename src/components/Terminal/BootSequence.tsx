@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../theme';
+import { screenBoot } from '../../styles/keyframes';
 
 const Wrap = styled.div`
   font-family: ${theme.font.mono};
-  color: ${theme.colors.phosphor};
-  text-shadow: ${theme.glow.text};
-  padding: ${theme.space(4)} 0;
+  color: ${theme.color.crt.phosphor};
+  text-shadow: ${theme.glow.phosphorHot};
+  padding: ${theme.space.loose} 0;
+  animation: ${screenBoot} ${theme.motion.screenBoot.duration}
+    ${theme.motion.screenBoot.easing};
+  transform-origin: 50% 50%;
+  font-size: 19px;
 `;
 
 const Line = styled.p`
@@ -16,6 +21,7 @@ const Line = styled.p`
 
 const STEPS = [
   '> POWERING ON THE TIME-RADIO...',
+  '> WARMING THE CATHODE...',
   '> TUNING THE CARRIER...',
   '> SIGNAL ACQUIRED.',
 ];
@@ -36,7 +42,7 @@ export function BootSequence({ onDone }: Props) {
   }, [step, onDone]);
 
   return (
-    <Wrap>
+    <Wrap aria-hidden>
       {STEPS.slice(0, step).map((line, i) => (
         <Line key={i}>{line}</Line>
       ))}
