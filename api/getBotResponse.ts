@@ -7,11 +7,18 @@ import { rememberPersona, recallPersona } from './_lib/personaCache';
 
 dotenv.config();
 
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 const MAX_INPUT_CHARS = 500;
 const MIN_DATE = '1500-01-01';
 
-const client = new Anthropic();
+// `baseURL` lets us route through a proxy (e.g. a Claude Max relay) without
+// code changes. Auth scheme remains `x-api-key` — the proxy needs to accept
+// that header, or rewrite it server-side.
+const client = new Anthropic(
+  process.env.ANTHROPIC_BASE_URL
+    ? { baseURL: process.env.ANTHROPIC_BASE_URL }
+    : {}
+);
 
 type Msg = { role: 'user' | 'assistant'; text: string };
 type Body = {
