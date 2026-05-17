@@ -2,59 +2,62 @@ import styled from 'styled-components';
 import { theme } from '../../theme';
 import { quickPromptsFor } from '../../lib/quickPrompts';
 
-// Three era-flavored opener chips that sit beneath the prompt after the
-// persona arrives. They tap-to-fill-and-send so the visitor never faces a
-// blank line. After the first message they fade off — they're a starter,
-// not a permanent menu.
+// Era-flavored opener suggestions that sit beneath the prompt after the
+// persona arrives. Styled as faint phosphor menu entries — they read as
+// "things you could ask," not as primary buttons. Tap area is 44px even
+// though the visible weight is light.
 
-const Row = styled.div`
+const List = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: ${theme.space.tight};
-  padding: ${theme.space.tight} 0 0;
+  flex-direction: column;
+  padding: ${theme.space.tight} 0 4px;
   font-family: ${theme.font.mono};
-  opacity: 0.85;
-
-  @media (max-width: ${theme.breakpoints.sm}) {
-    padding-top: 6px;
-    gap: 6px;
-  }
+  border-top: 1px dashed rgba(91, 255, 138, 0.18);
+  margin-top: ${theme.space.tight};
 `;
 
-const Chip = styled.button`
+const Heading = styled.div`
+  font-family: ${theme.font.mono};
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  color: ${theme.color.crt.phosphorGhost};
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  opacity: 0.7;
+`;
+
+const Line = styled.button`
   appearance: none;
-  background: rgba(91, 255, 138, 0.06);
-  border: 1px solid rgba(91, 255, 138, 0.22);
-  border-radius: 999px;
-  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  width: 100%;
+  padding: 8px 0;
   min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: ${theme.color.crt.phosphorDim};
   font-family: inherit;
-  font-size: 15px;
+  font-size: 17px;
   letter-spacing: 0.01em;
   text-shadow: ${theme.glow.phosphorSoft};
   cursor: pointer;
-  transition:
-    background 200ms ${theme.motion.overshoot},
-    color 200ms ${theme.motion.overshoot},
-    border-color 200ms ${theme.motion.overshoot},
-    transform 80ms ease-out;
+  transition: color 200ms ${theme.motion.overshoot};
 
   &::before {
-    content: '› ';
+    content: '›';
     color: ${theme.color.crt.phosphor};
-    opacity: 0.7;
-    margin-right: 2px;
+    opacity: 0.55;
+    flex-shrink: 0;
   }
 
   &:hover:not(:disabled) {
-    background: rgba(91, 255, 138, 0.12);
-    border-color: rgba(91, 255, 138, 0.45);
     color: ${theme.color.text.onScreen};
   }
 
-  &:active:not(:disabled) {
-    transform: translateY(1px);
+  &:hover:not(:disabled)::before {
+    opacity: 1;
   }
 
   &:disabled {
@@ -63,8 +66,8 @@ const Chip = styled.button`
   }
 
   @media (max-width: ${theme.breakpoints.sm}) {
-    font-size: 14px;
-    padding: 9px 12px;
+    font-size: 16px;
+    padding: 9px 0;
   }
 `;
 
@@ -77,17 +80,18 @@ type Props = {
 export function QuickPrompts({ date, disabled, onPick }: Props) {
   const prompts = quickPromptsFor(date);
   return (
-    <Row role="group" aria-label="Suggested opening questions">
+    <List role="group" aria-label="Suggested opening questions">
+      <Heading aria-hidden>· try asking ·</Heading>
       {prompts.map((p) => (
-        <Chip
+        <Line
           key={p}
           type="button"
           disabled={disabled}
           onClick={() => onPick(p)}
         >
           {p}
-        </Chip>
+        </Line>
       ))}
-    </Row>
+    </List>
   );
 }
