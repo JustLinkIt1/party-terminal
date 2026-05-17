@@ -9,8 +9,8 @@ const Button = styled.button`
   background: rgba(91, 255, 138, 0.06);
   border: 1px solid rgba(91, 255, 138, 0.32);
   border-radius: 4px;
-  padding: 6px 12px;
-  min-height: 32px;
+  padding: 10px 14px;
+  min-height: 44px;
   color: ${theme.color.crt.phosphor};
   font-family: ${theme.font.display};
   font-size: 12px;

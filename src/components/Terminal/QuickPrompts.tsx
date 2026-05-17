@@ -26,8 +26,8 @@ const Chip = styled.button`
   background: rgba(91, 255, 138, 0.06);
   border: 1px solid rgba(91, 255, 138, 0.22);
   border-radius: 999px;
-  padding: 6px 12px;
-  min-height: 32px;
+  padding: 10px 14px;
+  min-height: 44px;
   color: ${theme.color.crt.phosphorDim};
   font-family: inherit;
   font-size: 15px;
@@ -64,8 +64,7 @@ const Chip = styled.button`
 
   @media (max-width: ${theme.breakpoints.sm}) {
     font-size: 14px;
-    padding: 6px 10px;
-    min-height: 30px;
+    padding: 9px 12px;
   }
 `;
 
