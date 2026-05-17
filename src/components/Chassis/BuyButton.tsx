@@ -1,7 +1,14 @@
-import styled, { css } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { theme } from '../../theme';
 import { config, isCaPlaceholder, pumpFunUrl } from '../../config';
 import { Rivet } from './Rivet';
+
+// Amber "armed-but-locked" pulse for the pre-launch state. Slow, irregular —
+// reads as a powered button waiting for trigger, not a dead one.
+const armedPulse = keyframes`
+  0%, 100% { box-shadow: ${theme.shadow.buttonResting}, 0 0 0 0 rgba(232, 163, 61, 0.0); }
+  50%      { box-shadow: ${theme.shadow.buttonResting}, 0 0 22px 2px rgba(232, 163, 61, 0.45); }
+`;
 
 // Bolted-down cap (AWAITING DEPLOY) → armed lift state on hover.
 const Cap = styled.a<{ $disabled: boolean }>`
@@ -16,11 +23,14 @@ const Cap = styled.a<{ $disabled: boolean }>`
   letter-spacing: ${theme.tracking.display};
   font-size: 16px;
   text-transform: uppercase;
-  color: ${(p) => (p.$disabled ? theme.color.text.onChassisMuted : theme.color.text.onChassis)};
+  color: ${(p) => (p.$disabled ? theme.color.crt.amberWarn : theme.color.text.onChassis)};
   background: ${theme.texture.brass};
   background-blend-mode: overlay, normal;
   box-shadow: ${theme.shadow.buttonResting};
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  text-shadow: ${(p) =>
+    p.$disabled
+      ? '0 1px 0 rgba(0, 0, 0, 0.55), 0 0 6px rgba(232, 163, 61, 0.5)'
+      : '0 1px 0 rgba(0, 0, 0, 0.55)'};
   transition:
     transform 140ms ${theme.motion.overshoot},
     box-shadow 140ms ${theme.motion.overshoot},
@@ -47,6 +57,13 @@ const Cap = styled.a<{ $disabled: boolean }>`
     css`
       cursor: not-allowed;
       pointer-events: none;
+      animation: ${armedPulse} 2400ms ease-in-out infinite;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+        box-shadow: ${theme.shadow.buttonResting},
+          0 0 14px 1px rgba(232, 163, 61, 0.35);
+      }
     `}
 
   @media (max-width: ${theme.breakpoints.md}) {

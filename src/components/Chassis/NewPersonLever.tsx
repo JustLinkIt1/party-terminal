@@ -14,12 +14,26 @@ const Frame = styled.div`
   flex-shrink: 0;
 
   @media (max-width: ${theme.breakpoints.md}) {
-    width: 100%;
+    width: min(220px, 70vw);
+    margin: 0 auto;
     height: auto;
     flex-direction: column;
     gap: ${theme.space.tight};
     justify-content: center;
     padding: ${theme.space.tight} 0;
+    background: ${theme.texture.brassDarker};
+    background-blend-mode: multiply;
+    border-radius: ${theme.radius.panel};
+    box-shadow: ${theme.shadow.panelInset};
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border: 1px solid rgba(212, 175, 55, 0.22);
+      border-radius: 5px;
+      pointer-events: none;
+    }
   }
 `;
 

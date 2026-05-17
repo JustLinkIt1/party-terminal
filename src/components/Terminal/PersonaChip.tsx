@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { theme } from '../../theme';
 import { plateLatch } from '../../styles/keyframes';
@@ -5,7 +6,8 @@ import { plateLatch } from '../../styles/keyframes';
 // Engraved identification plate that names the person on the other end of the
 // line. Rendered as a phosphor-bordered cartouche with corner brackets, a
 // stencil header strip, and a glow-on monospace body. When the persona text
-// changes the whole plate latches in with a brief CRT bloom (plateLatch).
+// changes the whole plate latches in with a brief CRT bloom (plateLatch),
+// and the persona name is typed in character-by-character (telex-style).
 
 const Plate = styled.div`
   position: relative;
@@ -120,18 +122,77 @@ const Placeholder = styled.span`
   text-shadow: none;
 `;
 
+// Blinking cursor that trails the typed text until it finishes.
+const Cursor = styled.span`
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: ${theme.color.crt.phosphor};
+  box-shadow: ${theme.glow.phosphorHot};
+  animation: blink 800ms steps(1) infinite;
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+`;
+
+const REVEAL_TOTAL_MS = 520;
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
 type Props = { persona: string | null };
 
 export function PersonaChip({ persona }: Props) {
+  const target = persona ?? '';
+  const [revealed, setRevealed] = useState(prefersReducedMotion() ? target.length : 0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (!target) {
+      setRevealed(0);
+      return;
+    }
+    if (prefersReducedMotion()) {
+      setRevealed(target.length);
+      return;
+    }
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / REVEAL_TOTAL_MS);
+      const n = Math.floor(t * target.length);
+      setRevealed(n);
+      if (t < 1) rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [target]);
+
+  const typing = revealed < target.length;
+
   return (
-    <Plate aria-live="polite">
+    <Plate aria-live="polite" aria-label={persona ? `Transmission identified: ${persona}` : 'Awaiting signal'}>
       <Bracket $pos="tl" aria-hidden />
       <Bracket $pos="tr" aria-hidden />
       <Bracket $pos="bl" aria-hidden />
       <Bracket $pos="br" aria-hidden />
       <Header aria-hidden>Transmission Identified</Header>
-      <Body>
-        {persona ?? <Placeholder>· · · awaiting signal · · ·</Placeholder>}
+      <Body aria-hidden>
+        {persona ? (
+          <>
+            {target.slice(0, revealed)}
+            {typing && <Cursor />}
+          </>
+        ) : (
+          <Placeholder>· · · awaiting signal · · ·</Placeholder>
+        )}
       </Body>
     </Plate>
   );

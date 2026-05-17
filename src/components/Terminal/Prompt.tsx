@@ -3,14 +3,15 @@ import styled from 'styled-components';
 import { theme } from '../../theme';
 import { caretBlink } from '../../styles/keyframes';
 
-const Row = styled.div`
+const Row = styled.label`
   display: flex;
   align-items: center;
   border-top: 1px solid rgba(91, 255, 138, 0.12);
-  padding-top: ${theme.space.snug};
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding: ${theme.space.snug} 0 env(safe-area-inset-bottom, 0px) 0;
   gap: ${theme.space.snug};
   font-family: ${theme.font.mono};
+  min-height: 44px;
+  cursor: text;
 `;
 
 const Caret = styled.span`
@@ -46,9 +47,12 @@ const Input = styled.input`
   color: ${theme.color.text.onScreenUser};
   font-family: inherit;
   font-size: 19px;
+  line-height: 1.6;
+  min-height: 32px;
   text-shadow: ${theme.glow.phosphorSoft};
   caret-color: ${theme.color.crt.phosphor};
   letter-spacing: ${theme.tracking.mono};
+  padding: 4px 0;
 
   &::placeholder {
     color: ${theme.color.crt.phosphorDim};
@@ -63,6 +67,7 @@ const Input = styled.input`
 
   @media (max-width: ${theme.breakpoints.sm}) {
     font-size: 16px; /* avoid iOS auto-zoom */
+    min-height: 36px;
   }
 `;
 

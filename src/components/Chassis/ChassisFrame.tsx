@@ -5,6 +5,10 @@ import { Rivet } from './Rivet';
 
 // Outer brass body. Centered in the void. Visible rivets at every corner +
 // along the long edges. Everything interactive sits on top of this.
+//
+// The `--era-light` and `--era-light-strong` CSS vars set by App.tsx tint the
+// workshop-lamp gradient: candle-warm for the 1500s, fluorescent-cool for the
+// 2020s. So each dialed era literally has a different light in the room.
 const Body = styled.div`
   position: relative;
   width: min(1200px, calc(100vw - 24px));
@@ -19,6 +23,7 @@ const Body = styled.div`
     0 2px 0 ${theme.color.chassis.brassDark};
   z-index: ${theme.z.chassis};
   isolation: isolate;
+  transition: --era-light 1200ms ease, --era-light-strong 1200ms ease;
 
   /* Faint inner engraved border, like a panel cartouche. */
   &::before {
@@ -31,19 +36,20 @@ const Body = styled.div`
     z-index: 0;
   }
 
-  /* Subtle warm light from upper left (workshop lamp). */
+  /* Era-tinted workshop-lamp glow from upper left. */
   &::after {
     content: '';
     position: absolute;
     inset: 0;
     background: radial-gradient(
       ellipse at 22% -10%,
-      rgba(255, 220, 140, 0.18) 0%,
+      var(--era-light, rgba(255, 220, 140, 0.18)) 0%,
       transparent 45%
     );
     pointer-events: none;
     z-index: 0;
     border-radius: ${theme.radius.panel};
+    transition: background 1200ms ease;
   }
 
   @media (max-width: ${theme.breakpoints.md}) {
@@ -127,15 +133,15 @@ export const EngravedLabel = styled.span`
     0 -1px 0 rgba(212, 175, 55, 0.25);
 `;
 
-type Props = { children: ReactNode };
+type Props = { children: ReactNode; style?: React.CSSProperties };
 
-export function ChassisFrame({ children }: Props) {
+export function ChassisFrame({ children, style }: Props) {
   // Edge rivets — spaced every ~120px via flex justify-between on a fixed-width row.
   // Count tuned so they read as "every ~120px" on desktop.
   const edgeRivets = Array.from({ length: 9 });
 
   return (
-    <Body>
+    <Body style={style}>
       <Corners>
         <Corner $pos="tl" $size={10} />
         <Corner $pos="tr" $size={10} />

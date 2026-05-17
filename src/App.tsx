@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { GlobalStyle } from './styles/GlobalStyle';
 import { theme } from './theme';
 import { config } from './config';
+import { eraLight } from './lib/eraLight';
 import { ChassisFrame } from './components/Chassis/ChassisFrame';
 import { NameplatePanel } from './components/Chassis/NameplatePanel';
 import { PresetChipRow } from './components/Chassis/PresetChipRow';
@@ -19,6 +20,7 @@ import { Tokenomics } from './components/sections/Tokenomics';
 import { HowToBuy } from './components/sections/HowToBuy';
 import { Roadmap } from './components/sections/Roadmap';
 import { Footer } from './components/sections/Footer';
+import { SectionDivider } from './components/ui/SectionDivider';
 
 const Hero = styled.div`
   padding: ${theme.space.loose} 0 ${theme.space.base};
@@ -74,7 +76,9 @@ const FiligreeBelow = styled(Filigree)`
   margin: ${theme.space.base} auto 0;
 `;
 
-const Tagline = styled.h2`
+// Marketing tagline, not a section heading — kept as a div so section H2s
+// own the page's structural rhythm.
+const Tagline = styled.p`
   font-family: ${theme.font.display};
   font-weight: 400;
   letter-spacing: ${theme.tracking.display};
@@ -188,10 +192,15 @@ function App() {
     };
   }, [chat.state.status]);
 
+  const chassisStyle = useMemo(() => {
+    const year = parseInt(chat.state.date.slice(0, 4), 10);
+    return { ['--era-light' as string]: eraLight(year) } as React.CSSProperties;
+  }, [chat.state.date]);
+
   return (
     <>
       <GlobalStyle />
-      <ChassisFrame>
+      <ChassisFrame style={chassisStyle}>
         <NameplatePanel onCopy={setToast} />
         <Hero>
           <Filigree aria-hidden />
@@ -226,11 +235,13 @@ function App() {
             <ScreenColumn>
               <Terminal
                 key={chat.state.sessionId}
+                date={chat.state.date}
                 persona={chat.state.persona}
                 messages={chat.state.messages}
                 status={chat.state.status}
                 error={chat.state.error}
                 onSend={chat.send}
+                onToast={setToast}
               />
             </ScreenColumn>
             <NewPersonLever
@@ -250,9 +261,13 @@ function App() {
       </ChassisFrame>
 
       <Lore />
+      <SectionDivider />
       <SampleDispatches onPickDate={chat.setDate} />
+      <SectionDivider />
       <Tokenomics />
+      <SectionDivider />
       <HowToBuy />
+      <SectionDivider />
       <Roadmap />
       <Footer onCopy={setToast} />
       <Toast message={toast} onClear={() => setToast(null)} />

@@ -77,7 +77,8 @@ const Caption = styled.span`
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
 
   @media (max-width: ${theme.breakpoints.md}) {
-    display: none;
+    font-size: 9px;
+    letter-spacing: 0.14em;
   }
 `;
 

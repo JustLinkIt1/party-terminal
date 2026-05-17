@@ -156,10 +156,10 @@ const StepValue = styled.div`
 `;
 
 const Pill = styled.button`
-  padding: 6px 10px;
+  padding: 9px 12px;
   border-radius: ${theme.radius.button};
   font-family: ${theme.font.display};
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: ${theme.tracking.display};
   text-transform: uppercase;
   background: ${theme.texture.brass};
@@ -169,15 +169,13 @@ const Pill = styled.button`
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
   border: none;
   cursor: pointer;
-  min-width: 36px;
-  min-height: 32px;
+  min-width: 44px;
+  min-height: 44px;
   transition:
     transform 60ms ease-out,
     box-shadow 60ms ease-out;
 
   @media (max-width: ${theme.breakpoints.md}) {
-    min-width: 44px;
-    min-height: 44px;
     padding: 10px 12px;
     font-size: 14px;
   }
@@ -421,13 +419,13 @@ export function DialAssembly({ date, disabled, onDateChange }: Props) {
     <Outer>
       <DiscWrap role="group" aria-label="Time dial">
         <Pointer aria-hidden />
-        <Hub aria-live="polite">
+        <Hub>
           <HubDate>
             {String(year).padStart(4, '0')}-{String(month).padStart(2, '0')}-
             {String(clampDay(year, month, day)).padStart(2, '0')}
           </HubDate>
           <HubMode $pending={isDirty}>
-            {isDirty ? 'PENDING' : `${MONTH_NAMES[month - 1]} ${day} · ${year}`}
+            {isDirty ? '◆ PENDING' : 'TUNED'}
           </HubMode>
         </Hub>
       </DiscWrap>
